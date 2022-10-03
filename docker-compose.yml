@@ -1,0 +1,13 @@
+version: '3.1'
+
+services:
+  application:
+    image: eclipse-mosquitto
+    restart: always
+    ports:
+      - 1883:1883
+    volumes:
+    - ./data:/mosquitto/data/
+    - ./logs:/mosquitto/logs/
+    - ./config:/mosquitto/config/
+    command: /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
