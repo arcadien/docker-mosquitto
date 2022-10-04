@@ -1,13 +1,57 @@
-version: '3.1'
+version: '3.8'
 
 services:
-  application:
+  influxdb:
+    image: influxdb:2.0
+    restart: always
+    volumes:
+      - ./data/influxdb:/home/influxdb/.influxdbv2
+      - ./config/influxdb.yml:/etc/influxdb2/config.yml:ro influxdb
+    ports:
+     - 8083:8083
+     - 8086:8086
+    networks:
+      - iot
+    environment:
+      - DOCKER_INFLUXDB_INIT_USERNAME=root
+      - DOCKER_INFLUXDB_INIT_PASSWORD=root
+      - DOCKER_INFLUXDB_INIT_ORG=Sogilis
+  mosquitto:
     image: eclipse-mosquitto
     restart: always
     ports:
       - 1883:1883
+      - 9001:9001
     volumes:
-    - ./data:/mosquitto/data/
-    - ./logs:/mosquitto/logs/
-    - ./config:/mosquitto/config/
+    - ./data/mosquitto:/mosquitto/data/
+    - ./logs/mosquitto:/mosquitto/logs/
+    - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro mosquitto
+    - ./config/passwd:/mosquitto/config/passwd:ro passwd
+    networks:
+      - iot
     command: /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf
+
+  telegraph:
+    image: telegraf
+    restart: always
+    volumes:
+      - ./config/telegraf.conf:/etc/telegraf/telegraf.conf:ro telegraf
+    networks:
+      - iot
+    depends_on:
+      - mosquitto
+      - influxdb
+
+  grafana:
+    image: grafana/grafana
+    restart: always
+    ports:
+      - 3000:3000
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    networks:
+      - iot
+    depends_on:
+      - influxdb
+networks:
+  iot:
